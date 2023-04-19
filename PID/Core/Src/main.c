@@ -46,16 +46,17 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+/*------------------ For PWM -----------------------*/
 uint32_t PA8duty = 500;
 uint32_t PA9duty = 500;
-
+/*------------------ For QEI -----------------------*/
 int32_t qeiread = 0;
 int32_t post_qeiread = 0;
-
+/*------------------For calculating -----------------------*/
 float position;
 float vcontrol;
 float set_position;
-
+/*------------------Set PID -----------------------*/
 arm_pid_instance_f32 PID = {0};
 
 /* USER CODE END PV */
@@ -137,22 +138,22 @@ int main(void)
 	  if(post_qeiread-qeiread <= -10000) qeiread = 0;			//for underflow
 	  if(post_qeiread-qeiread >= 10000) qeiread = 307199;		//for overflow*/
 
-	  position = qeiread*(36000.0/307200.0);
+	  position = qeiread*(36000.0/307200.0); //calculate angle
 
 	  static uint32_t timestamp = 0;
 	  if(timestamp < HAL_GetTick()){
 		  timestamp = HAL_GetTick()+10;
 
-		 vcontrol = arm_pid_f32(&PID,set_position-position);
+		 vcontrol = arm_pid_f32(&PID,set_position-position); //use tracking error to get control feedback
 
-		 if(vcontrol>0)
+		 if(vcontrol>0) //control motor by using control feedback
 		 {
 			 PA8duty = 0;
 			 PA9duty = (vcontrol/3.3)*1000;
 			 if(PA9duty <= 0) PA9duty = 0;
 			 else if(PA9duty >= 100) PA9duty = 100;
 		 }
-		 else if(vcontrol<0)
+		 else if(vcontrol<0) //also control motor by using control feedback
 		 {
 		 	PA8duty = -(vcontrol/3.3)*1000;
 		 	PA9duty = 0;
@@ -160,11 +161,11 @@ int main(void)
 		 	else if(PA8duty >= 100) PA9duty = 100;
 		 }
 	  }
-	  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,PA8duty);
-	  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2,PA9duty);
+	  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,PA8duty); //use the control value
+	  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2,PA9duty); //use the control value
 
 
-	 post_qeiread = qeiread;
+	 post_qeiread = qeiread; //collect post QEI value to protect overflow and underflow
   }
   /* USER CODE END 3 */
 }
