@@ -49,8 +49,8 @@ UART_HandleTypeDef huart2;
 uint32_t PA8duty = 500;
 uint32_t PA9duty = 500;
 
-uint32_t qeiread;
-uint32_t post_qeiread;
+int32_t qeiread = 0;
+int32_t post_qeiread = 0;
 
 float position;
 float vcontrol;
@@ -118,9 +118,9 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_1|TIM_CHANNEL_2);
 
 /*------------------Set PID -----------------------*/
-  PID.Kp = 0.1;
-  PID.Ki = 0.0001;
-  PID.Kd = 0.1;
+  PID.Kp = 0.7;
+  PID.Ki = 0;
+  PID.Kd = 0;
   arm_pid_init_f32(&PID, 0);
 
   /* USER CODE END 2 */
@@ -134,8 +134,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  qeiread = __HAL_TIM_GET_COUNTER(&htim2); //read
 
-	/*  if(post_qeiread-qeiread <= -100000) qeiread = 0;			//for underflow
-	  else if(post_qeiread-qeiread >= 100000) qeiread = 307199;		//for overflow*/
+	  if(post_qeiread-qeiread <= -10000) qeiread = 0;			//for underflow
+	  if(post_qeiread-qeiread >= 10000) qeiread = 307199;		//for overflow*/
 
 	  position = qeiread*(36000.0/307200.0);
 
